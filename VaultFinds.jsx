@@ -94,12 +94,12 @@ const MiniBar = ({ value, max, color = "#fff" }) => (
 );
 
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
-const Dashboard = () => {
+const Dashboard = ({ now, liveTick }) => {
   const totalSales = MOCK_ORDERS.filter(o => o.status === "Delivered").reduce((s, o) => s + o.amount, 0);
   const totalProfit = MOCK_ORDERS.filter(o => o.status === "Delivered").reduce((s, o) => s + o.profit, 0);
   const pending = MOCK_ORDERS.filter(o => o.status === "Pending").length;
-  const conversion = 68;
-  const weekData = [42, 78, 55, 91, 63, 84, 72];
+  const conversion = 68 + (liveTick % 4);
+  const weekData = [42, 78, 55, 91, 63, 84, 72].map((v, i) => Math.max(20, v + ((liveTick + i) % 5 - 2) * 2));
   const maxVal = Math.max(...weekData);
 
   return (
@@ -107,7 +107,7 @@ const Dashboard = () => {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <div style={{ fontSize: 22, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em" }}>Dashboard</div>
-          <div style={{ fontSize: 13, color: "#555", marginTop: 3 }}>May 25, 2026 · Sunday</div>
+          <div style={{ fontSize: 13, color: "#555", marginTop: 3 }}>{now.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", weekday: "long" })}</div>
         </div>
         <div style={{ width: 36, height: 36, borderRadius: 10, background: "#191919", border: "1px solid #2a2a2a", display: "flex", alignItems: "center", justifyContent: "center", color: "#666" }}>
           <Icon name="bell" size={16} />
@@ -574,8 +574,18 @@ const NAV_ITEMS = [
 export default function VaultFinds() {
   const [tab, setTab] = useState("dashboard");
   const [showFab, setShowFab] = useState(false);
+  const [now, setNow] = useState(() => new Date());
+  const [liveTick, setLiveTick] = useState(0);
 
-  const SCREENS = { dashboard: <Dashboard />, products: <Products />, customers: <Customers />, orders: <Orders />, content: <Content />, ai: <AI /> };
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+      setLiveTick(t => t + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const SCREENS = { dashboard: <Dashboard now={now} liveTick={liveTick} />, products: <Products />, customers: <Customers />, orders: <Orders />, content: <Content />, ai: <AI /> };
 
   return (
     <div style={{
@@ -590,7 +600,7 @@ export default function VaultFinds() {
         ::-webkit-scrollbar { display: none; }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+        @keyframes pulse { 0%,100% { opacity:1; box-shadow:0 0 0 0 #22c55e66; } 50% { opacity:0.5; box-shadow:0 0 0 8px #22c55e00; } }
       `}</style>
 
       {/* Header */}
@@ -602,8 +612,9 @@ export default function VaultFinds() {
           <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: "-0.02em", color: "#fff" }}>Vault Finds</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ fontSize: 11, color: "#555", background: "#111", border: "1px solid #1e1e1e", borderRadius: 99, padding: "3px 10px" }}>
-            @thevaultfinds
+          <div style={{ fontSize: 11, color: "#7dd3fc", background: "#111", border: "1px solid #1e1e1e", borderRadius: 99, padding: "3px 10px", display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e", display: "inline-block", animation: "pulse 1.4s ease-in-out infinite" }} />
+            @thevaultfinds · LIVE
           </div>
           <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#191919", border: "1px solid #2a2a2a", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Icon name="user" size={14} color="#666" />
@@ -612,7 +623,7 @@ export default function VaultFinds() {
       </div>
 
       {/* Main Content */}
-      <div style={{ flex: 1, padding: "20px 20px 100px", overflowY: "auto", animation: "fadeUp 0.3s ease" }}>
+      <div key={tab} style={{ flex: 1, padding: "20px 20px 100px", overflowY: "auto", animation: "fadeUp 0.3s ease" }}>
         {SCREENS[tab]}
       </div>
 
